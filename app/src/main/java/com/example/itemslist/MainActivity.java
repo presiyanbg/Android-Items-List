@@ -1,18 +1,35 @@
 package com.example.itemslist;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.hardware.TriggerEventListener;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
-
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import com.google.android.material.navigation.NavigationView;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,11 +38,72 @@ public class MainActivity extends AppCompatActivity {
     static ListViewAdapter adapter;
     EditText input;
     ImageView enter;
+    Toast t;
+    ActionBarDrawerToggle toggle;
+    private SensorManager sensorManager;
+    private Sensor gyroscopeSensor;
+    private SensorEventListener gyroscopeEventListener;
+    String sensorData;
 
+    @SuppressLint({"ResourceType", "ServiceCast"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        createNotificationChannel();
+
+        toggle = new ActionBarDrawerToggle(this, findViewById(R.id.drawerLayout), R.string.open, R.string.close);
+        toggle.syncState();
+
+        NavigationView mNavigationView = (NavigationView) findViewById(R.id.nav_view);
+        mNavigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.exitButton:
+                        makeToast("Exiting...");
+
+                        sendNotification("We are still watching you...");
+
+                        finish();
+
+                        System.exit(0);
+
+                        return true;
+                    case R.id.text_notify:
+                        sendNotification("Notification from nav");
+
+                        return true;
+                    case R.id.gyro_data:
+                        makeToast(sensorData);
+                    default:
+                        return false;
+                }
+            }
+        });
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        if (gyroscopeSensor == null) {
+            Toast.makeText(this, "No gyro for your scope", Toast.LENGTH_SHORT).show();
+        }
+
+        gyroscopeEventListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                sensorData =
+                    event.values[0] + " / " +
+                    event.values[1] + " / " +
+                    event.values[2]
+                ;
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
 
         Bundle extras = getIntent().getExtras();
         String username;
@@ -39,11 +117,6 @@ public class MainActivity extends AppCompatActivity {
         enter = findViewById(R.id.add);
 
         items = new ArrayList<>();
-        items.add("Apple");
-        items.add("Apple 2");
-        items.add("Apple 3");
-        items.add("Apple 4");
-        items.add("Apple 5");
 
         /**
          * Delete item on click.
@@ -91,9 +164,56 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        loadContent();
     }
 
-    Toast t;
+    /**
+     * Load list content on app load.
+     */
+    public void loadContent() {
+        File path = getApplicationContext().getFilesDir();
+        File readFrom = new File(path, "list.txt");
+
+        byte[] content = new byte[(int) readFrom.length()];
+
+        try {
+            FileInputStream stream = new FileInputStream(readFrom);
+
+            stream.read(content);
+
+            String s = new String(content);
+
+            s = s.substring(1, s.length() - 1);
+
+            String split[] = s.split(", ");
+
+            items = new ArrayList<>(Arrays.asList(split));
+
+            adapter = new ListViewAdapter(this, items);
+
+            listView.setAdapter(adapter);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        File path = getApplicationContext().getFilesDir();
+
+        try {
+            FileOutputStream writer = new FileOutputStream(new File(path, "list.txt"));
+
+            writer.write(items.toString().getBytes());
+
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        super.onDestroy();
+    }
 
     /**
      * Display text in toast.
@@ -106,6 +226,54 @@ public class MainActivity extends AppCompatActivity {
         t = Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT);
 
         t.show();
+    }
+
+    /**
+     * Send notification.
+     *
+     * @param msg String
+     */
+    public void sendNotification(String msg) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "lemubitA")
+                .setSmallIcon(R.drawable.notification_icon)
+                .setContentTitle(msg)
+                .setContentText("Notification from Shopping List")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        notificationManager.notify(101, builder.build());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        sensorManager.registerListener(gyroscopeEventListener, gyroscopeSensor, SensorManager.SENSOR_DELAY_FASTEST);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        sensorManager.unregisterListener(gyroscopeEventListener);
+    }
+
+    /**
+     * Create Notification channel.
+     */
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "ShoppingListChannel";
+            String description = "Channel for item list";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel("lemubitA", name, importance);
+
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
     }
 
     /**

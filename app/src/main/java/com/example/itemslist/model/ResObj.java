@@ -1,45 +1,58 @@
 package com.example.itemslist.model;
 
+import android.content.Intent;
+
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public class ResObj {
-    private String message;
-    private String username;
-    private String password;
-    private String status;
+    @SerializedName("id")
+    @Expose
+    private Integer id;
+
+    @SerializedName("password")
+    public String password;
+
+    @SerializedName("username")
+    @Expose
+    public String username;
+
+    @SerializedName("code")
+    @Expose
+    private Integer code;
+
+    @SerializedName("message")
+    public String message;
 
     public ResObj(String username, String password) {
         this.username = username;
         this.password = password;
     }
 
-    public String getStatus() {
-        return status;
+    public ResObj(String username, String password, Integer id) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public Integer getId() {
+        return id;
+    }
+
+    public Integer getCode() {
+        return code;
     }
 
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }

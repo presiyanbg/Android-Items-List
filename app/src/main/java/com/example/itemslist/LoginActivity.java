@@ -13,6 +13,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.itemslist.model.ResObj;
 import com.example.itemslist.remote.ApiUtils;
 import com.example.itemslist.remote.UserService;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -77,7 +82,7 @@ public class LoginActivity extends AppCompatActivity {
      * @param password String
      */
     private void doLogin(String username, String password) {
-        retrofit2.Call<ResObj> call = userService.login(new ResObj(username, password));
+        retrofit2.Call<ResObj> call = userService.login(username, password);
 
         call.enqueue(new Callback<ResObj>() {
             @Override
@@ -85,18 +90,16 @@ public class LoginActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     ResObj resObj = response.body();
 
-                    String body = response.body().toString();
+                    Integer id = resObj.getId();
 
-                    Log.d("Body", body);
-
-                    if (resObj != null && resObj.getMessage() != null && resObj.getMessage().equals("true")) {
+                    if (resObj != null && (response.code() + "").equals("200")) {
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
 
                         intent.putExtra("username", username);
 
                         startActivity(intent);
                     } else {
-                        Toast.makeText(LoginActivity.this, "Incorrect", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Incorrect credentials", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(LoginActivity.this, "Error ? :(", Toast.LENGTH_SHORT).show();

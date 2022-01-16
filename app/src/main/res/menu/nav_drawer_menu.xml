@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/text_notify"
+        android:title="Notification">
+    </item>
+
+    <item
+        android:id="@+id/gyro_data"
+        android:title="Gyroscope data">
+    </item>
+
+
+    <item
+        android:id="@+id/exitButton"
+        android:title="Exit">
+    </item>
+
+
+</menu>
