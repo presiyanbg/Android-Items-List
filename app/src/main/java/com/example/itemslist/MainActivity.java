@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -107,9 +108,13 @@ public class MainActivity extends AppCompatActivity {
 
         Bundle extras = getIntent().getExtras();
         String username;
+        Integer id;
 
         if (extras != null) {
             username = extras.getString("username");
+            id = extras.getInt("id");
+
+            Toast.makeText(MainActivity.this, "Hello " + username + ", ID: " + id.toString(), Toast.LENGTH_SHORT).show();
         }
 
         listView = findViewById(R.id.listview);

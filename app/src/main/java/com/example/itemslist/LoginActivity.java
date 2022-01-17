@@ -90,14 +90,18 @@ public class LoginActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     ResObj resObj = response.body();
 
-                    Integer id = resObj.getId();
-
                     if (resObj != null && (response.code() + "").equals("200")) {
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        Integer id = resObj.getId();
+                        String username = resObj.getUsername();
 
-                        intent.putExtra("username", username);
+                        if (id != null & username != null) {
+                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
 
-                        startActivity(intent);
+                            intent.putExtra("username", username);
+                            intent.putExtra("id", id);
+
+                            startActivity(intent);
+                        }
                     } else {
                         Toast.makeText(LoginActivity.this, "Incorrect credentials", Toast.LENGTH_SHORT).show();
                     }
